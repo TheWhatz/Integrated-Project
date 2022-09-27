@@ -1,0 +1,47 @@
+version: "3"
+
+services:
+  ssi2-oasip-db:
+    container_name: "ssi2-oasip-db"
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    volumes:
+      - "./database/data:/var/lib/mysql"
+      - "./database/my.cnf:/etc/my.cnf"
+      - "./database/script:/docker-entrypoint-initdb.d"
+    restart: "on-failure"
+    env_file:
+     - ./database/.env.prod
+  ssi2-oasip-api:
+    container_name: "ssi2-oasip-api"
+    image: ssi2/oasip-api
+    build:
+      context: "./server"
+    depends_on:
+      - ssi2-oasip-db
+    expose:
+      - "8080"
+    restart: "on-failure"
+    env_file:
+     - ./server/.env.prod
+  ssi2-oasip-client:
+    container_name: "ssi2-oasip-client"
+    image: ssi2/oasip-client
+    build:
+      context: "./client"
+    depends_on:
+      - ssi2-oasip-api
+    expose:
+      - "3000"
+  ssi2-oasip-proxy:
+    container_name: "ssi2-oasip-proxy"
+    image: ssi2/oasip-proxy
+    volumes:
+      - "/etc/ssl/certs:/usr/share/ssl/certs"
+      - "/etc/ssl/private:/usr/share/ssl/private"
+    build:
+      context: "./proxy"
+    ports:
+      - "80:80"
+      - "443:443"
